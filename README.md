@@ -14,13 +14,14 @@ backend/    Express.js REST API with JWT authentication
 
 ### Database Schema
 
-| Table     | Key columns                                              |
-|-----------|----------------------------------------------------------|
-| `tenants` | `id`, `name`, `slug` (unique)                            |
+| Table     | Key columns                                                          |
+| --------- | -------------------------------------------------------------------- |
+| `tenants` | `id`, `name`, `slug` (unique)                                        |
 | `users`   | `id`, `tenant_id` (FK), `email` (unique per tenant), `password_hash` |
-| `todos`   | `id`, `tenant_id` (FK), `user_id` (FK), `title`, `completed` |
+| `todos`   | `id`, `tenant_id` (FK), `user_id` (FK), `title`, `completed`         |
 
 Tenant isolation is enforced at **two** levels:
+
 1. The JWT token embeds `tenantId` — it is impossible to forge cross-tenant access.
 2. Every SQL query filters by `tenant_id`, so even a compromised token cannot reach another tenant's data.
 
@@ -33,23 +34,33 @@ Tenant isolation is enforced at **two** levels:
 git clone https://github.com/anupamavm/cloudforge.git
 cd cloudforge
 
-# Copy env (optional — defaults work for local dev)
-cp backend/.env.example backend/.env
+# (Optional) Customize environment variables
+# A .env file is already included with development defaults
+# To customize, edit .env or copy from .env.example:
+# cp .env.example .env
 
 # Start everything (PostgreSQL + backend + frontend)
 docker compose up --build
 ```
 
-| Service  | URL                    |
-|----------|------------------------|
-| Frontend | http://localhost:3000  |
-| Backend  | http://localhost:5000  |
+| Service  | URL                   |
+| -------- | --------------------- |
+| Frontend | http://localhost:3000 |
+| Backend  | http://localhost:5000 |
+
+### Environment Variables
+
+The project uses a `.env` file in the root directory. Key variables:
+
+- `JWT_SECRET` — Secret key for JWT token signing (change in production!)
+- `VITE_API_URL` — API URL for frontend to connect to backend (default: http://localhost:5000)
 
 ---
 
 ## Manual / Development Setup
 
 ### Prerequisites
+
 - Node.js 20+
 - PostgreSQL 14+ running locally
 
@@ -79,26 +90,26 @@ All requests and responses use JSON.
 
 ### Tenants
 
-| Method | Path            | Body              | Description           |
-|--------|-----------------|-------------------|-----------------------|
-| GET    | `/api/tenants`  | —                 | List all tenants      |
-| POST   | `/api/tenants`  | `{ name, slug }`  | Create a new tenant   |
+| Method | Path           | Body             | Description         |
+| ------ | -------------- | ---------------- | ------------------- |
+| GET    | `/api/tenants` | —                | List all tenants    |
+| POST   | `/api/tenants` | `{ name, slug }` | Create a new tenant |
 
 ### Auth (per tenant)
 
-| Method | Path                                  | Body                    | Description  |
-|--------|---------------------------------------|-------------------------|--------------|
-| POST   | `/api/tenants/:tenantSlug/register`   | `{ email, password }`   | Register     |
-| POST   | `/api/tenants/:tenantSlug/login`      | `{ email, password }`   | Login → JWT  |
+| Method | Path                                | Body                  | Description |
+| ------ | ----------------------------------- | --------------------- | ----------- |
+| POST   | `/api/tenants/:tenantSlug/register` | `{ email, password }` | Register    |
+| POST   | `/api/tenants/:tenantSlug/login`    | `{ email, password }` | Login → JWT |
 
 ### Todos (requires `Authorization: Bearer <token>`)
 
-| Method | Path                                           | Body        | Description      |
-|--------|------------------------------------------------|-------------|------------------|
-| GET    | `/api/tenants/:tenantSlug/todos`               | —           | List all todos   |
-| POST   | `/api/tenants/:tenantSlug/todos`               | `{ title }` | Create a todo    |
-| PATCH  | `/api/tenants/:tenantSlug/todos/:id`           | —           | Toggle completed |
-| DELETE | `/api/tenants/:tenantSlug/todos/:id`           | —           | Delete a todo    |
+| Method | Path                                 | Body        | Description      |
+| ------ | ------------------------------------ | ----------- | ---------------- |
+| GET    | `/api/tenants/:tenantSlug/todos`     | —           | List all todos   |
+| POST   | `/api/tenants/:tenantSlug/todos`     | `{ title }` | Create a todo    |
+| PATCH  | `/api/tenants/:tenantSlug/todos/:id` | —           | Toggle completed |
+| DELETE | `/api/tenants/:tenantSlug/todos/:id` | —           | Delete a todo    |
 
 ---
 
@@ -108,4 +119,3 @@ All requests and responses use JSON.
 - JWTs expire after **7 days** and embed `userId`, `email`, and `tenantId`.
 - The `tenantGuard` middleware cross-checks the JWT's `tenantId` against the URL's `:tenantSlug` — a user from Tenant A **cannot** access Tenant B's todos even with a valid token.
 - Auth endpoints are rate-limited (20 req / 15 min) and tenant creation is rate-limited (10 req / hour) via `express-rate-limit`.
-
