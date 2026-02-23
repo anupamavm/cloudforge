@@ -1,0 +1,126 @@
+name: Terraform Infrastructure
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "Environment to deploy"
+        required: true
+        type: choice
+        options:
+          - dev
+          - prod
+      action:
+        description: "Terraform action"
+        required: true
+        type: choice
+        options:
+          - plan
+          - apply
+          - destroy
+
+env:
+  AWS_REGION: us-east-1
+
+jobs:
+  terraform:
+    name: Terraform ${{ github.event.inputs.action }}
+    runs-on: ubuntu-latest
+
+    environment: ${{ github.event.inputs.environment }}
+
+    permissions:
+      id-token: write
+      contents: read
+
+    defaults:
+      run:
+        working-directory: infra/terraform/environments/${{ github.event.inputs.environment }}
+
+    steps:
+      # ============================================
+      # 1. Checkout Code
+      # ============================================
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # ============================================
+      # 2. Configure AWS Credentials
+      # ============================================
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      # ============================================
+      # 3. Setup Terraform
+      # ============================================
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.6.0
+
+      # ============================================
+      # 4. Terraform Init
+      # ============================================
+      - name: Terraform Init
+        run: terraform init
+
+      # ============================================
+      # 5. Terraform Validate
+      # ============================================
+      - name: Terraform Validate
+        run: terraform validate
+
+      # ============================================
+      # 6. Terraform Plan
+      # ============================================
+      - name: Terraform Plan
+        if: github.event.inputs.action == 'plan' || github.event.inputs.action == 'apply'
+        run: terraform plan -out=tfplan
+
+      # ============================================
+      # 7. Terraform Apply
+      # ============================================
+      - name: Terraform Apply
+        if: github.event.inputs.action == 'apply'
+        run: terraform apply -auto-approve tfplan
+
+      # ============================================
+      # 8. Terraform Destroy Plan
+      # ============================================
+      - name: Terraform Destroy Plan
+        if: github.event.inputs.action == 'destroy'
+        run: terraform plan -destroy -out=tfplan-destroy
+
+      # ============================================
+      # 9. Terraform Destroy
+      # ============================================
+      - name: Terraform Destroy
+        if: github.event.inputs.action == 'destroy'
+        run: terraform apply -auto-approve tfplan-destroy
+
+      # ============================================
+      # 10. Show Outputs
+      # ============================================
+      - name: Show Terraform Outputs
+        if: github.event.inputs.action == 'apply'
+        run: |
+          echo "========================================="
+          echo "Terraform Outputs"
+          echo "========================================="
+          terraform output
+
+      # ============================================
+      # 11. Summary
+      # ============================================
+      - name: Summary
+        if: always()
+        run: |
+          echo "========================================="
+          echo "Terraform ${{ github.event.inputs.action }} Complete"
+          echo "Environment: ${{ github.event.inputs.environment }}"
+          echo "Triggered by: ${{ github.actor }}"
+          echo "========================================="

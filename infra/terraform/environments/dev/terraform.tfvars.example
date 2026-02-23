@@ -1,0 +1,32 @@
+# AWS Configuration
+aws_region   = "us-east-1"
+project_name = "cloudforge-dev"
+
+# VPC Configuration
+vpc_cidr             = "10.0.0.0/16"
+availability_zones   = ["us-east-1a", "us-east-1b"]
+public_subnet_cidrs  = ["10.0.1.0/24", "10.0.2.0/24"]
+private_subnet_cidrs = ["10.0.11.0/24", "10.0.12.0/24"]
+
+# RDS Configuration
+db_instance_class      = "db.t3.micro"  # Free tier eligible
+db_allocated_storage   = 20
+db_engine_version      = "15.4"
+db_name                = "cloudforge"
+db_username            = "postgres"
+db_skip_final_snapshot = true  # Set to false in production!
+db_deletion_protection = false # Set to true in production!
+db_multi_az            = false # Set to true in production!
+
+# ALB Configuration
+alb_deletion_protection = false # Set to true in production!
+
+# ECS Configuration
+backend_image_tag       = "latest"
+frontend_image_tag      = "latest"
+backend_cpu             = "256"  # 0.25 vCPU
+backend_memory          = "512"  # 512 MB
+frontend_cpu            = "256"  # 0.25 vCPU
+frontend_memory         = "512"  # 512 MB
+backend_desired_count   = 1
+frontend_desired_count  = 1

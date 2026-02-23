@@ -119,3 +119,92 @@ All requests and responses use JSON.
 - JWTs expire after **7 days** and embed `userId`, `email`, and `tenantId`.
 - The `tenantGuard` middleware cross-checks the JWT's `tenantId` against the URL's `:tenantSlug` — a user from Tenant A **cannot** access Tenant B's todos even with a valid token.
 - Auth endpoints are rate-limited (20 req / 15 min) and tenant creation is rate-limited (10 req / hour) via `express-rate-limit`.
+
+---
+
+## AWS Deployment
+
+CloudForge is production-ready with complete **AWS infrastructure as code** using Terraform.
+
+### Architecture Overview
+
+```
+Internet → ALB → ECS Fargate (Backend + Frontend) → RDS PostgreSQL
+                      ↓
+                ECR (Docker Images)
+```
+
+**Services Used:**
+
+- **ECS Fargate**: Serverless container orchestration
+- **Application Load Balancer**: Path-based routing (`/api/*` → backend, `/*` → frontend)
+- **RDS PostgreSQL**: Managed database with automated backups
+- **ECR**: Private Docker image repositories
+- **VPC**: Multi-AZ networking with public/private subnets
+- **Secrets Manager**: Secure storage for DB passwords and JWT secrets
+- **S3 + DynamoDB**: Terraform state management with locking
+
+### Quick Deploy
+
+Full deployment guide: [infra/terraform/QUICKSTART.md](infra/terraform/QUICKSTART.md)
+
+```bash
+# 1. Create Terraform backend
+cd infra/terraform/backend-setup
+terraform init && terraform apply
+
+# 2. Deploy infrastructure
+cd ../environments/dev
+terraform init && terraform apply
+
+# 3. Deploy application using PowerShell script
+cd ../../..
+.\infra\deploy.ps1 -Environment dev -Build -Push -Deploy
+```
+
+**Estimated Costs:**
+
+- Development: ~$80-85/month
+- Production: ~$200-250/month
+
+---
+
+## CI/CD with GitHub Actions
+
+Automated deployment pipelines for continuous integration and delivery.
+
+### Available Workflows
+
+| Workflow                     | Trigger              | Purpose                                       |
+| ---------------------------- | -------------------- | --------------------------------------------- |
+| **Deploy to Dev**            | Push to `main`       | Build images → Push to ECR → Deploy to ECS    |
+| **Deploy to Prod**           | Push to `production` | Build → Require approval → Deploy             |
+| **PR Validation**            | Pull request         | Lint, test, security scan, terraform validate |
+| **Terraform Infrastructure** | Manual               | Provision/update/destroy infrastructure       |
+
+### Setup
+
+1. **Configure GitHub Secrets:**
+   - `AWS_ACCESS_KEY_ID`
+   - `AWS_SECRET_ACCESS_KEY`
+
+2. **Deploy infrastructure first:**
+
+   ```bash
+   cd infra/terraform/environments/dev
+   terraform init && terraform apply
+   ```
+
+3. **Push to main:**
+
+   ```bash
+   git add .
+   git commit -m "Deploy to dev"
+   git push origin main
+   ```
+
+   GitHub Actions will automatically build, push, and deploy! 🚀
+
+**Full CI/CD Documentation:** [.github/workflows/README.md](.github/workflows/README.md)
+
+---

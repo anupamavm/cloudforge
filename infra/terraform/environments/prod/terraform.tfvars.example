@@ -1,0 +1,35 @@
+# Production Configuration
+# Copy this to terraform.tfvars and customize
+
+# AWS Configuration
+aws_region   = "us-east-1"
+project_name = "cloudforge-prod"
+
+# VPC Configuration
+vpc_cidr             = "10.1.0.0/16"
+availability_zones   = ["us-east-1a", "us-east-1b"]
+public_subnet_cidrs  = ["10.1.1.0/24", "10.1.2.0/24"]
+private_subnet_cidrs = ["10.1.11.0/24", "10.1.12.0/24"]
+
+# RDS Configuration - Production Settings
+db_instance_class      = "db.t3.small"      # Larger instance
+db_allocated_storage   = 100                 # More storage
+db_engine_version      = "15.4"
+db_name                = "cloudforge"
+db_username            = "postgres"
+db_skip_final_snapshot = false               # Create final snapshot!
+db_deletion_protection = true                # Prevent accidental deletion
+db_multi_az            = true                # High availability
+
+# ALB Configuration
+alb_deletion_protection = true               # Prevent accidental deletion
+
+# ECS Configuration - Production Settings
+backend_image_tag       = "v1.0.0"           # Use version tags in prod
+frontend_image_tag      = "v1.0.0"
+backend_cpu             = "512"              # 0.5 vCPU
+backend_memory          = "1024"             # 1 GB
+frontend_cpu            = "512"              # 0.5 vCPU
+frontend_memory         = "1024"             # 1 GB
+backend_desired_count   = 2                  # Multiple instances for HA
+frontend_desired_count  = 2                  # Multiple instances for HA
