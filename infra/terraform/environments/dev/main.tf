@@ -14,7 +14,7 @@ terraform {
 
   # Uncomment after creating the S3 bucket for state storage
   backend "s3" {
-    bucket         = "cloudforge-terraform-state-a6586bab"
+    bucket         = "cloudforge-terraform-state-cloudforge-test"
     key            = "dev/terraform.tfstate"
     region         = "us-east-1"
     encrypt        = true

@@ -9,11 +9,11 @@ resource "random_id" "bucket_suffix" {
 # S3 Bucket for Terraform State
 # --------------------------------------------------
 resource "aws_s3_bucket" "terraform_state" {
-  bucket = "${var.project_name}-terraform-state-${random_id.bucket_suffix.hex}"
+  bucket = "${var.project_name}-terraform-state-cloudforge-test"
 
-  lifecycle {
-    prevent_destroy = true
-  }
+  # lifecycle {
+  #   prevent_destroy = true
+  # }
 
   tags = {
     Name        = "${var.project_name}-terraform-state"
@@ -67,6 +67,8 @@ resource "aws_s3_bucket_lifecycle_configuration" "terraform_state" {
   rule {
     id     = "cleanup-old-versions"
     status = "Enabled"
+
+    filter {}
 
     noncurrent_version_expiration {
       noncurrent_days = 90
